@@ -4,6 +4,8 @@ import Pagination from "react-js-pagination";
 import Axios from 'axios';
 import Modal from 'react-modal';
 
+
+
 const MasOtros = () => {
 
     // formato de  la modal
@@ -18,60 +20,99 @@ const MasOtros = () => {
         }
     };
 
+    const btnRadioOtroEstado = [{id:'A',detalle:'Activo'},{id:'I',detalle:'Inactivo'}];
+
     // Registro de lectura y tabla principal y del select
     const {register, errors, handleSubmit} = useForm();
     const [otroDatos, setOtroDatos] = useState([]);
     const [cptosV, setCptosV] = useState([]);
-     const [cptosF, setCptosF] = useState([]);
-     const fijo = [{id:'T',detalle:'Teléfono'},
+    const [cptosF, setCptosF] = useState([]);
+    const fijo = [{id:'T',detalle:'Teléfono'},
                  {id:'E',detalle:'Email'},{id:'C',detalle:'Cédula'}]
 
-    let today = new Date();
-    let hdate=today.getDate() + "-"+ parseInt(today.getMonth()+1) +"-"+today.getFullYear();
+    // Tabla principal valores iniciales
+    var d = new Date();
+    let hdate=fecha(d.toISOString());
     var [otroSelect, setOtroSelect] = useState({
         id:0,  otroCodigo:'', otroNombre:'', otroPassword:'', otroFecha:hdate,
-        otroEmail:'', otroTexto:'', otroSelectF:'', otroSelectV:'', otroEstado:''
+        otroEmail:'', otroTexto:'', otroSelectF:'E', otroSelectV:'', otroEstado:'A'
     });
+
+    // Validación
     const seleccionaOtro=(elemento, caso)=>{
+        elemento.otroFecha = fecha(elemento.otroFecha)
+        if (elemento.otroEstado===null || elemento.otroEstado===undefined ){elemento.otroEstado='A'}
         setOtroSelect(elemento);
         (caso === 'Editar')&&setIsOpen(true)
     }
-    // meetdos de la Modal
+    // metdos de la Modal general y delete
     const [modalIsOpen,setIsOpen] = React.useState(false);
+    const [showDialog, setShowDialog] = React.useState(false);
+    const cancelRef = React.useRef();
+    const openDialog = () => setShowDialog(true);
+    const closeDialog = () => setShowDialog(false);
 
     function openModal() {
         setIsOpen(true);
     }
 
-    function userNuevo(){
-        openModal();
-    }
     function afterOpenModal() {
-        let today = new Date();
-        let hdate=today.getDate() + "-"+ parseInt(today.getMonth()+1) +"-"+today.getFullYear();
-     
-        otroSelect.id = 0; otroSelect.otroCodigo=''; otroSelect.otroNombre=''; 
-        otroSelect.otroFecha=hdate; otroSelect.otroTexto=''; otroSelect.otroEstado='A'; 
-        otroSelect.otroPassword=''; otroSelect.otroSelectF=''; otroSelect.otroSelectV='';
-        otroSelect.otroEmail=''
     }
 
     function closeModal(){
         setIsOpen(false);
     }
 
+
+    // Fecha de ISO a amd
+    function fecha(fch){
+        if (fch != null && fch !== undefined) {
+           fch = fch.split("T")[0]
+        }else{
+            fch=new Date();
+        }
+        return fch;
+    }
+
+    //  Registro Nuevo valores iniciales
+    function userNuevo(){
+        var d = new Date();
+        let hdate=fecha(d.toISOString());
+        otroSelect.id=0;
+        otroSelect.otroCodigo='';
+        otroSelect.otroNombre='';
+        otroSelect.otroPassword='';
+        otroSelect.otroTexto='';
+        otroSelect.otroFecha=hdate;
+        otroSelect.otroEmail='';otroSelect.otroTexto='';
+        otroSelect.otroSelectF='E';
+        otroSelect.otroSelectV='';
+        otroSelect.otroEstado='A';
+        openModal();
+    }
+
     // botones de la tabla
     function cambiaRec(txt){
-        alert (txt.id+' '+txt.otroCodigo+' '+txt.otroNombre); 
         openModal();
+    }
+
+    function changeEstado(estado){
+        otroSelect.otroEstado = estado;
     }
     
     function borraRec(txt){
      //   if( confirm ('Va aborrar a ' + i+ '?')){
     //  https://levelup.gitconnected.com/how-to-build-a-generic-reusable-synchronous-like-confirmation-dialog-in-react-js-71e32dfa495c
         let i = txt.id
-        alert('borra '+txt.otroCodigo);
+        const isConfirmed = alert("Está seguro de borrar a "+txt.otroNombre+" ?");
+alert(isConfirmed);
+        if (isConfirmed) {
 
+         
+
+        alert('borra '+txt.otroCodigo);
+        setShowDialog(true);
+        return
         Axios.get('http://localhost:3001/deleteOtro:'+ i )
         .then(response=>{
             alert('ya');
@@ -79,8 +120,13 @@ const MasOtros = () => {
         .catch((err) => console.error(err));
         });
         remove(i)
+    }else{
+        alert ('No borra');
     }
+    }
+
    
+    // remueve de la lista traida de la base de datos
     const remove = (id) => {
         otroDatos.splice(otroDatos.findIndex(txt => txt.id === id), 1);
         setOtroDatos([...otroDatos]);
@@ -88,17 +134,13 @@ const MasOtros = () => {
 
     const handleChangeSelectF = (e) => {
         otroSelect.otroSelectF=e.target.value
-        alert(e.target.value)
     }
 
     const handleChangeSelectV = (e) => {
         otroSelect.otroSelectV=e.target.value
-        alert(e.target.value)
-
     }
     // va a actualizar la información
-    const submitOtro = (data, event) =>{
-        alert(data.id)
+    const submitOtro = (data, event) =>{       
         Axios.post('http://localhost:3001/updateOtros', data )
         .then(()=>{
             console.log(data)
@@ -129,7 +171,8 @@ const MasOtros = () => {
         }) 
     },[])
 
-    const todosPerPage = 8;
+    //  Paginación
+    const todosPerPage = 6;
     const [ activePage, setCurrentPage ] = useState( 1 );
  
     // Logic for displaying current todos
@@ -146,6 +189,7 @@ const MasOtros = () => {
        setCurrentPage( pageNumber )
     };
 
+    //  Parte principal: formulario y ventana modal
     return(      
         <Fragment>
             
@@ -172,7 +216,7 @@ const MasOtros = () => {
                         <label>Codigo</label>
                         <input type="text" defaultValue={otroSelect.otroCodigo}
                         name="otroCodigo" placeholder="contraseña obligatorio"
-                ref={register({
+                        ref={register({
                             required:{value:true, message:'Campo obligatorio'}
                         })} />
                     </div>
@@ -222,11 +266,10 @@ const MasOtros = () => {
                          onChange={e=>handleChangeSelectF(e)}                    
                             ref={register({
                                 required:{value:true, message:'Campo obligatorio'}
-                            })} >
-                         {/* {cptosF}  */}
-                         { fijo.map((txt, key) =>                
-    <option  value={txt.id}>{txt.detalle}                   
-     </option> ) }
+                            })} >                         
+                            { fijo.map((txt, key) =>                
+                            <option  value={txt.id}>{txt.detalle}                   
+                            </option> ) }
                         </select>
                     </div>  
                     <div>
@@ -239,19 +282,20 @@ const MasOtros = () => {
                             {cptosV}
                         </select>
                     </div>
-                    <div>                      
-                        <div className='content'>
-                            <label>Estado</label>
-                            <div><input type="radio" defaultValue={otroSelect.otroEstado} name="otroEstado"                        ref={register({
-                                required:{value:true, message:'Campo obligatorio'}
-                            })} /> Activo</div>
-                            <div><input type="radio" defaultValue={otroSelect.otroEstado} name="otroEstado"                        ref={register({
-                                required:{value:true, message:'Campo obligatorio'}
-                            })} /> Inactivo</div>
-                        </div>
+                    <div>
+                        <label>Estado</label>
+                        <input type="radio" name = 'otroEstado' defaultChecked={otroSelect.otroEstado === 'A'}
+                        onChange={() => changeEstado('A')} ref={register()}
+                        defaultValue={otroSelect.otroEstado='A'}  /> Activo
+                        <input type="radio" name = 'otroEstado' defaultChecked={otroSelect.otroEstado === 'I'} 
+                        onChange={() => changeEstado('I')} ref={register()}
+                        defaultValue={otroSelect.otroEstado='I'}  /> Inactivo  
                     </div>
-                    <button>Aceptar</button>
-                    <button onClick={closeModal}>Anula</button>
+
+                    <div>
+                        <button>Aceptar</button>
+                        <button onClick={closeModal}>Anula</button>
+                    </div>
                     <div  style={{visibility : "hidden" }}>
                         <input type='text'  name ='id' 
                          defaultValue={otroSelect.id}
@@ -260,7 +304,10 @@ const MasOtros = () => {
                 </form> 
                 </div>
             </div>
-        </Modal>        
+        </Modal>     
+ 
+
+
             <div>
                 <table className='table table-bordered'> 
                     <thead>                        
@@ -276,35 +323,34 @@ const MasOtros = () => {
                             <th>VARIABLE</th>
                             <th>CORREO</th>
                             <th colSpan='2'>COMANDOS</th>
- 
                         </tr> 
+                     
                     </thead>  
-                        <tbody>                      
-                            {/* {renderTodos} */}
-
-                          {  otroDatos.map((txt, key) =>               
-                    <tr key={txt.id}>
-                        <td>{txt.id}</td>
-                        <td>{txt.otroCodigo}</td> 
-                        <td>{txt.otroNombre}</td>
-                        <td>{txt.otroFecha}</td>
-                        <td>{txt.otroTexto}</td>
-                        <td>{txt.otroEstado}</td>
-                        <td>{txt.otroSelectF}</td>
-                        <td>{txt.otroSelectV}</td>
-                        <td>{txt.otroEmail}</td>
-                        <td><button onClick={() =>  seleccionaOtro(txt,'Editar')} className="btn btn-sm btn-primary ">Cambia</button></td>
-                        <td><button onClick={() => borraRec(txt)} className="btn btn-sm btn-danger ">Anula</button></td>
-                    </tr>                              
-                )}
+                        <tbody>        
+                        {  otroDatos.map((txt, key) =>               
+                        <tr key={txt.id}>
+                            <td>{txt.id}</td>
+                            <td>{txt.otroCodigo}</td> 
+                            <td>{txt.otroNombre}</td>
+                            <td>{fecha(txt.otroFecha)}</td>
+                            <td>{txt.otroTexto}</td>
+                            <td>{txt.otroEstado}</td>
+                            <td>{txt.otroPassword}</td>
+                            <td>{txt.otroSelectF}</td>
+                            <td>{txt.otroSelectV}</td>
+                            <td>{txt.otroEmail}</td>
+                            <td><button onClick={() =>  seleccionaOtro(txt,'Editar')} className="btn btn-sm btn-primary ">Cambia</button></td>
+                            <td><button onClick={() => borraRec(txt)} className="btn btn-sm btn-danger ">Anula</button></td>
+                        </tr>                              
+                        )}
                         </tbody>                 
                 </table>
                 <div className="pagination">
                     <Pagination
                     activePage={ activePage }
-                    itemsCountPerPage={ 8 }
+                    itemsCountPerPage={ 6 }
                     totalItemsCount={ otroDatos.length }
-                    pageRangeDisplayed={ 8 }
+                    pageRangeDisplayed={ 6 }
                     onChange={ handlePageChange }
                     />
                 </div>
