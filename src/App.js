@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { BrowserRouter as Router, Route, Switch, Link} from 'react-router-dom';
+import { BrowserRouter as Router, Route,  Link} from 'react-router-dom';
 import Usuarios from './views/usuarios';
 import Conceptos from './views/conceptos';
 import Emmpresa from './views/empresa';
@@ -9,7 +9,7 @@ import Login from './views/login';
 import Otro from './views/otro';
 import Test from './views/test';
 import 'bootstrap/dist/css/bootstrap.min.css';
-// import './App.css';
+import './App.css';
 
 function App() {
 
@@ -20,37 +20,40 @@ function App() {
   return (
      
     <Router>
-      <ul className="nav-container">
+      <ul className="container mb-1">
 
       {show ? (
-        <div>
+        <div className="container">
         <li className="nav-container-items-mr-2"> 
         <Link to= '/'>Inicio</Link></li>
         </div>
         ):(
-        <div style={{maxWidth: '30rem', margin:'2rem auto'}}>
+        <div>
           <div>
-          <li className="nav-container--items-mr-2"> 
+          <li className="nav-container--items-mr-1"> 
           <Link to= '/empresa'>Empresa</Link></li>
-          <li className="nav-container-items-mr-2"> 
+          <li className="nav-container-items-mr-1"> 
           <Link to= '/usuarios'>Usuarios</Link></li>
-          <li className="nav-container-items-mr-2"> 
+          <li className="nav-container-items-mr-1"> 
           <Link to= '/conceptos'>Conceptos</Link></li>
-          <li className="nav-container-items-mr-2"> 
+          <li className="nav-container-items-mr-1"> 
           <Link to= '/IngreGastos'>Otros ingresos y Gastos</Link></li>
-          <li className="nav-container-items-mr-2"> 
+          <li className="nav-container-items-mr-1"> 
           <Link to= '/Pagos'>Pagos</Link></li>
-          <li className="nav-container-items-mr-2"> 
+          <li className="nav-container-items-mr-1"> 
           <Link to= '/Otros'>OtroEjemplo</Link></li>
-          <li className="nav-container-items-mr-2"> 
+          <li className="nav-container-items-mr-1"> 
           <Link to= '/Test'>Test Ej</Link></li>
-          </div>
-          <div>
-            <span>{nomEmpresa}</span>
-          </div>
-          <div>
-            <span>{nomUsuario}</span>
-          </div>
+          </div> 
+          <div className='section-tit'>
+            <div>
+              <span>{nomEmpresa}</span>
+            </div>
+            <div>
+              <span>{nomUsuario}</span>
+            </div>
+          </div>         
+
         </div>
         )}
       </ul>

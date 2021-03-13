@@ -4,7 +4,7 @@ import Axios from 'axios';
 
 const Login = () => {
 
-    const {register, errors, handleSubmit} = useForm();
+   
 
     const onSubmit = (data, event) =>{  
             Axios.post('http://localhost:3001/autentica',data)

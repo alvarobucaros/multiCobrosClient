@@ -1,14 +1,11 @@
 import React, { Fragment, useEffect, useState} from 'react';
-import {Link} from 'react-router-dom'
-import Pagination from "react-js-pagination";
+import Pagination from 'reactjs-hooks-pagination';
+import Paginate from 'react-paginate';
 import Axios from 'axios';
 import { Modal, ModalBody, ModalFooter, ModalHeader,
-    Form, FormGroup, Label, Input, Button, Select} from 'reactstrap'
+        Form, FormGroup, Label, Input, Button, Select} from 'reactstrap'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-//import Heading from '../components/heading'        
-
-//id, pr_codigo, pr_detalle, pr_fecha
 const Test = () => {
 
 // parametros de la modal
@@ -47,10 +44,18 @@ const Test = () => {
 
  // trae datos de la tabla principal
 
-    const [testDatos, settestDatos] = useState([]);
+    const [testDatos, setTestDatos] = useState([]);
     const [testSelect, setTestSelect] = useState({
         id:0,pr_codigo:'',pr_detalle:'',pr_fecha:new Date()
     });
+
+    const [offset, setOffset] = useState(0);
+    //const [data, setData] = useState([]);
+    const [perPage] = useState(6);
+    const [pageCount, setPageCount] = useState(0)
+    const recordPerPage = 4;
+    const [ activePage, setCurrentPage ] = useState( 1 );
+ 
     const seleccionaTest=(elemento, caso)=>{
         setTestSelect(elemento);
         (caso === 'Editar')&&setIsOpen(true)
@@ -59,21 +64,26 @@ const Test = () => {
 
     useEffect(()=>{
         Axios.get('http://localhost:3001/leePrueba')
-        .then((res)=>{
-            var data = res.data
-            // const dt = data.map((txt, key) =>               
-            //         <tr key={txt.id}>
-            //             <td>{txt.id}</td>
-            //             <td>{txt.pr_codigo}</td> 
-            //             <td>{txt.pr_detalle}</td>
-            //             <td>{txt.pr_fecha}</td>
-            //             <td><button onClick={() => cambiaRec(txt)} className="btn btn-sm btn-primary ">Cambia</button></td>
-            //             <td><button onClick={() => borraRec(txt)} className="btn btn-sm btn-danger ">Anula</button></td>
-            //         </tr>                              
-            //     )
-            settestDatos(data)
+        .then(res=>{
+            const testDatos = res.data;
+            const slice = testDatos.slice(offset, offset + perPage)
+            // const postData = slice.map(pd => <div key={pd.id}>
+            //     <p>{pd.title}</p>
+            //     <img src={pd.thumbnailUrl} alt=""/>
+            // </div>)
+            const indexOfLastRec  = activePage * recordPerPage;
+            const indexOfFirstRec = indexOfLastRec - recordPerPage;
+            const currentRec     = testDatos.slice( indexOfFirstRec, indexOfLastRec );
+            setTestDatos(currentRec)
+            setPageCount(Math.ceil(testDatos.length / perPage))
         })
-    },[])
+    },[offset])
+
+    const handlePageClick = (e) => {
+        const selectedPage = e.selected;
+        setOffset(selectedPage + 1)
+    };
+
 
     // Actualiza la información
     const submitTest = (data, event) =>{
@@ -110,14 +120,12 @@ const Test = () => {
         const remove = (id) => {
             alert('borra del arreglo')
             testDatos.splice(testDatos.findIndex(txt => txt.id === id), 1);
-            settestDatos([...testDatos]);
+            setTestDatos([...testDatos]);
         };
 
  
         //  Paginacion
-        const recordPerPage = 8;
-        const [ activePage, setCurrentPage ] = useState( 1 );
-     
+
         // Logic for displaying current todos
         const indexOfLastRec  = activePage * recordPerPage;
         const indexOfFirstRec = indexOfLastRec - recordPerPage;
@@ -189,26 +197,31 @@ const Test = () => {
                 </thead>  
                 <tbody>                      
                     {
-                    testDatos.map(txt =>                                      
+                        testDatos.map(txt =>                                      
                     <tr key={txt.id}>
                         <td>{txt.id}</td>
                         <td>{txt.pr_codigo}</td> 
                         <td>{txt.pr_detalle}</td>
-                        <td>{txt.pr_fecha.substring(0,10)}</td>
+                        <td>{txt.pr_fecha}</td>
                         <td><button onClick={() => seleccionaTest(txt,'Editar')} className="btn btn-sm btn-primary ">Cambia</button></td>
                         <td><button onClick={() => borraRec(txt,'Borrar')} className="btn btn-sm btn-danger ">Anula</button></td>
                     </tr>)
                     }
                 </tbody>                 
             </table>
-            <div className="pagination">
-                <Pagination
-                activePage={ activePage }
-                itemsCountPerPage={ 8 }
-                totalItemsCount={ testDatos.length }
-                pageRangeDisplayed={ 8 }
-                onChange={ handlePageChange }
-                />
+            <div className="pagination">            
+                <Paginate
+                    previousLabel={"anterior"}
+                    nextLabel={"siguiente"}
+                    breakLabel={"..."}
+                    breakClassName={"break-me"}
+                    pageCount={pageCount}
+                    marginPagesDisplayed={2}
+                    pageRangeDisplayed={5}
+                    onPageChange={handlePageClick}
+                    containerClassName={"pagination"}
+                    subContainerClassName={"pages pagination"}
+                    activeClassName={"active"}/>
             </div>
         </div>
      </Fragment>

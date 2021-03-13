@@ -1,15 +1,14 @@
 import React, { Fragment, useEffect, useState} from 'react';
 import {useForm} from 'react-hook-form';
-import Pagination from "react-js-pagination";
+import Pagination from "react-paginate";
 import Axios from 'axios';
 import Modal from 'react-modal';
-
-
+import '../App.css';
 
 const MasOtros = () => {
 
     // formato de  la modal
-    const customStyles = {
+    const customStylesOtro = {
         content : {
         top                   : '40%',
         left                  : '50%',
@@ -19,16 +18,31 @@ const MasOtros = () => {
         transform             : 'translate(-50%, -50%)'
         }
     };
+    const customStylesDelete = {
+        content : {
+        top                   : '50%',
+        left                  : '50%',
+        right                 : 'auto',
+        bottom                : 'auto',
+        marginRight           : '-50%',
+        transform             : 'translate(-50%, -50%)'
+        }
+    };
 
     const btnRadioOtroEstado = [{id:'A',detalle:'Activo'},{id:'I',detalle:'Inactivo'}];
+    const otroSelectF = [{id:'T',detalle:'Teléfono'},
+                        {id:'E',detalle:'Email'},
+                        {id:'C',detalle:'Cédula'}]
 
     // Registro de lectura y tabla principal y del select
     const {register, errors, handleSubmit} = useForm();
     const [otroDatos, setOtroDatos] = useState([]);
+    const [offset, setOffset] = useState(0);
     const [cptosV, setCptosV] = useState([]);
     const [cptosF, setCptosF] = useState([]);
-    const fijo = [{id:'T',detalle:'Teléfono'},
-                 {id:'E',detalle:'Email'},{id:'C',detalle:'Cédula'}]
+ 
+    const[codBorrado, setCodBorrado] = useState('');
+    const[idBorrar, setIdBorrar] = useState(0);
 
     // Tabla principal valores iniciales
     var d = new Date();
@@ -45,13 +59,11 @@ const MasOtros = () => {
         setOtroSelect(elemento);
         (caso === 'Editar')&&setIsOpen(true)
     }
+
     // metdos de la Modal general y delete
     const [modalIsOpen,setIsOpen] = React.useState(false);
-    const [showDialog, setShowDialog] = React.useState(false);
-    const cancelRef = React.useRef();
-    const openDialog = () => setShowDialog(true);
-    const closeDialog = () => setShowDialog(false);
-
+    const [modalDeleteIsOpen,setDeleteIsOpen] = React.useState(false);
+ 
     function openModal() {
         setIsOpen(true);
     }
@@ -63,6 +75,13 @@ const MasOtros = () => {
         setIsOpen(false);
     }
 
+    function openModalDelete() {
+        setDeleteIsOpen(true);
+    }
+
+    function closeModalDelete(){
+        setDeleteIsOpen(false);
+    }
 
     // Fecha de ISO a amd
     function fecha(fch){
@@ -100,31 +119,24 @@ const MasOtros = () => {
         otroSelect.otroEstado = estado;
     }
     
-    function borraRec(txt){
-     //   if( confirm ('Va aborrar a ' + i+ '?')){
-    //  https://levelup.gitconnected.com/how-to-build-a-generic-reusable-synchronous-like-confirmation-dialog-in-react-js-71e32dfa495c
-        let i = txt.id
-        const isConfirmed = alert("Está seguro de borrar a "+txt.otroNombre+" ?");
-alert(isConfirmed);
-        if (isConfirmed) {
-
-         
-
-        alert('borra '+txt.otroCodigo);
-        setShowDialog(true);
-        return
-        Axios.get('http://localhost:3001/deleteOtro:'+ i )
-        .then(response=>{
-            alert('ya');
-            handlePageChange()
+    function confirmaBorraRec(txt){
+        Axios.get('http://localhost:3001/deleteOtro:'+ idBorrar )
+        .then( alert('Registro borrado'),
+            response=>{           
+            handlePageClick()
         .catch((err) => console.error(err));
         });
-        remove(i)
-    }else{
-        alert ('No borra');
-    }
+        remove(idBorrar)
+        setDeleteIsOpen(false);
     }
 
+    function borraRec(txt){
+        let i = txt.id
+        setCodBorrado(txt.otroCodigo+' '+txt.otroNombre);
+        setIdBorrar(txt.id)
+        openModalDelete();
+
+    }
    
     // remueve de la lista traida de la base de datos
     const remove = (id) => {
@@ -142,21 +154,32 @@ alert(isConfirmed);
     // va a actualizar la información
     const submitOtro = (data, event) =>{       
         Axios.post('http://localhost:3001/updateOtros', data )
-        .then(()=>{
+        .then( alert('Información actualizada'),()=>{
             console.log(data)
         .catch((err) => console.error(err));
         })
         event.target.reset()
+        remove(idBorrar)        
+        setIsOpen(false);
     }
+
+    const [pageCount, setPageCount] = useState(0)
+    const recordPerPage = 8;
+    const [ activePage, setCurrentPage ] = useState( 1 );
 
  // trae datos de la tabla principal
     useEffect(()=>{
         Axios.get('http://localhost:3001/leeotro')
-        .then((res)=>{
-            var data = res.data
-            setOtroDatos(data)
+        .then(res=>{
+            var otroDatos = res.data
+            const slice = otroDatos.slice(offset, offset + recordPerPage)
+            const indexOfLastRec  = activePage * recordPerPage;
+            const indexOfFirstRec = indexOfLastRec - recordPerPage;
+            const currentRec     = otroDatos.slice( indexOfFirstRec, indexOfLastRec );
+            setOtroDatos(slice)
+            setPageCount(Math.ceil(otroDatos.length / recordPerPage))           
         })
-    },[])
+    },[offset])
 
    // trae la lista dsplegable dinamica
     useEffect(()=>{
@@ -172,28 +195,18 @@ alert(isConfirmed);
     },[])
 
     //  Paginación
-    const todosPerPage = 6;
-    const [ activePage, setCurrentPage ] = useState( 1 );
- 
-    // Logic for displaying current todos
-    const indexOfLastTodo  = activePage * todosPerPage;
-    const indexOfFirstTodo = indexOfLastTodo - todosPerPage;
-    const currentTodos     = otroDatos.slice( indexOfFirstTodo, indexOfLastTodo );
- 
-    const renderTodos = currentTodos.map( ( todo, index ) => {
-       return <li key={ index }>{ todo }</li>;
-    } );
- 
-    const handlePageChange = ( pageNumber ) => {
-       console.log( `active page is ${ pageNumber }` );
-       setCurrentPage( pageNumber )
+
+    const handlePageClick = (e) => {
+        const selectedPage = e.selected;
+        alert(selectedPage)
+        setOffset(selectedPage + 1)
     };
 
     //  Parte principal: formulario y ventana modal
     return(      
         <Fragment>
             
-            <div className='content'>
+            <div>
                 <h2>OTRO EJEMPLO</h2>
                 <button onClick={userNuevo}>Nuevo registro</button>
             <div>                
@@ -202,114 +215,129 @@ alert(isConfirmed);
             ariaHideApp={false} 
             onAfterOpen={afterOpenModal}
             onRequestClose={closeModal}
-            style={customStyles}
+            style={customStylesOtro}
             contentLabel="Otros"
             >
 
             <div className='form'>
-                <div className='laModal'>
-                   <form onSubmit={handleSubmit(submitOtro)}>
-                    <div className='miModalTit'>
-                        <h3>Actualiza otros</h3>
-                    </div>
-                    <div>
-                        <label>Codigo</label>
-                        <input type="text" defaultValue={otroSelect.otroCodigo}
-                        name="otroCodigo" placeholder="contraseña obligatorio"
-                        ref={register({
-                            required:{value:true, message:'Campo obligatorio'}
-                        })} />
-                    </div>
-                    <div>
-                        <label>Nombe</label>
-                        <input type="text" defaultValue={otroSelect.otroNombre} 
-                        name="otroNombre" placeholder="contraseña obligatorio"
-                        ref={register({
-                            required:{value:true, message:'Campo obligatorio'}
-                        })} />
-                    </div>
-                    <div>
-                        <label>Contraseña</label>
-                        <input type="Password" defaultValue={otroSelect.otroPassword}
-                                name = "otroPassword" placeholder="contraseña obligatorio"
-                        ref={register({
-                            required:{value:true, message:'Campo obligatorio'}
-                        })} />
-                    </div>                    
-                    <div>
-                        <label>Fecha</label> 
-                        <input type="Date" defaultValue={otroSelect.otroFecha}
-                         name="otroFecha" placeholder="AAAA/MM/DD" 
-                        ref={register({
-                            required:{value:true, message:'Campo obligatorio'}
-                        })} />
-                    </div>
-                    <div>
-                        <label>E-mail</label>
-                        <input type="email"  defaultValue={otroSelect.otroEmail}
-                        name = "otroEmail" placeholder="Correo electrónico" 
-                        ref={register({
-                            required:{value:true, message:'Campo obligatorio'}
-                        })} />
-                    </div>        
-                    <div>
-                        <label>Detalles</label>
-                        <input type="textarea"  defaultValue={otroSelect.otroTexto}
-                        name="otroTexto" rows={2} placeholder="Detalles" 
-                        ref={register({
-                            required:{value:true, message:'Campo obligatorio'}
-                        })} />
-                    </div>
-                    <div>
-                        <label>Lista Fija</label>
-                        <select  name="otroSelectF"  defaultValue={otroSelect.otroSelectF}
-                         onChange={e=>handleChangeSelectF(e)}                    
+                <div className='content'>
+                    <form className="form-horizontal" onSubmit={handleSubmit(submitOtro)}>
+                        <div className='laModal'>
+                            <div className='miModalTit'>
+                                <h3>Actualiza otros</h3>
+                            </div>
+                        <div>
+                            <label className='label'>Codigo</label>
+                            <input type="text" defaultValue={otroSelect.otroCodigo}
+                            name="otroCodigo" placeholder="contraseña obligatorio"
                             ref={register({
                                 required:{value:true, message:'Campo obligatorio'}
-                            })} >                         
-                            { fijo.map((txt, key) =>                
-                            <option  value={txt.id}>{txt.detalle}                   
-                            </option> ) }
-                        </select>
-                    </div>  
-                    <div>
-                        <label>Lista Variable</label>
-                        <select  name="otroSelectV" defaultValue={otroSelect.otroSelectV}
-                         onChange={handleChangeSelectV}                     
+                            })} />
+                        </div>
+                        <div>
+                            <label>Nombe</label>
+                            <input type="text" defaultValue={otroSelect.otroNombre} 
+                            name="otroNombre" placeholder="contraseña obligatorio"
                             ref={register({
                                 required:{value:true, message:'Campo obligatorio'}
-                            })} >
-                            {cptosV}
-                        </select>
-                    </div>
-                    <div>
-                        <label>Estado</label>
-                        <input type="radio" name = 'otroEstado' defaultChecked={otroSelect.otroEstado === 'A'}
-                        onChange={() => changeEstado('A')} ref={register()}
-                        defaultValue={otroSelect.otroEstado='A'}  /> Activo
-                        <input type="radio" name = 'otroEstado' defaultChecked={otroSelect.otroEstado === 'I'} 
-                        onChange={() => changeEstado('I')} ref={register()}
-                        defaultValue={otroSelect.otroEstado='I'}  /> Inactivo  
-                    </div>
+                            })} />
+                        </div>
+                        <div>
+                            <label>Contraseña</label>
+                            <input type="Password" defaultValue={otroSelect.otroPassword}
+                                    name = "otroPassword" placeholder="contraseña obligatorio"
+                            ref={register({
+                                required:{value:true, message:'Campo obligatorio'}
+                            })} />
+                        </div>                    
+                        <div>
+                            <label>Fecha</label> 
+                            <input type="Date" defaultValue={otroSelect.otroFecha}
+                            name="otroFecha" placeholder="AAAA/MM/DD" 
+                            ref={register({
+                                required:{value:true, message:'Campo obligatorio'}
+                            })} />
+                        </div>
+                        <div>
+                            <label>E-mail</label>
+                            <input type="email"  defaultValue={otroSelect.otroEmail}
+                            name = "otroEmail" placeholder="Correo electrónico" 
+                            ref={register({
+                                required:{value:true, message:'Campo obligatorio'}
+                            })} />
+                        </div>        
+                        <div>
+                            <label>Detalles</label>
+                            <input type="textarea"  defaultValue={otroSelect.otroTexto}
+                            name="otroTexto" rows={2} placeholder="Detalles" 
+                            ref={register({
+                                required:{value:true, message:'Campo obligatorio'}
+                            })} />
+                        </div>
+                        <div>
+                            <label>Lista Fija</label>
+                            <select  name="otroSelectF"  defaultValue={otroSelect.otroSelectF}
+                            onChange={e=>handleChangeSelectF(e)}                    
+                                ref={register({
+                                    required:{value:true, message:'Campo obligatorio'}
+                                })} >                         
+                                { otroSelectF.map((txt, key) =>                
+                                <option  value={txt.id}>{txt.detalle}                   
+                                </option> ) }
+                            </select>
+                        </div>  
+                        <div>
+                            <label>Lista Variable</label>
+                            <select  name="otroSelectV" defaultValue={otroSelect.otroSelectV}
+                            onChange={handleChangeSelectV}                     
+                                ref={register({
+                                    required:{value:true, message:'Campo obligatorio'}
+                                })} >
+                                {cptosV}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Estado</label>
+                            <input type="radio" name = 'otroEstado' defaultChecked={otroSelect.otroEstado === 'A'}
+                            onChange={() => changeEstado('A')} ref={register()}
+                            defaultValue={otroSelect.otroEstado='A'}  /> Activo
+                            <input type="radio" name = 'otroEstado' defaultChecked={otroSelect.otroEstado === 'I'} 
+                            onChange={() => changeEstado('I')} ref={register()}
+                            defaultValue={otroSelect.otroEstado='I'}  /> Inactivo  
+                        </div>
 
-                    <div>
-                        <button>Aceptar</button>
-                        <button onClick={closeModal}>Anula</button>
+                        <div>
+                            <button>Aceptar</button>
+                            <button onClick={closeModal}>Anula</button>
+                        </div>
+                        <div  style={{visibility : "hidden" }}>
+                            <input type='text'  name ='id' 
+                            defaultValue={otroSelect.id}
+                            ref={ register({value:0})}/>    
+                        </div>
                     </div>
-                    <div  style={{visibility : "hidden" }}>
-                        <input type='text'  name ='id' 
-                         defaultValue={otroSelect.id}
-                        ref={ register({value:0})}/>    
-                    </div>
-                </form> 
+                    </form> 
                 </div>
             </div>
         </Modal>     
  
+        <Modal
+            isOpen={modalDeleteIsOpen}
+            ariaHideApp={false} 
+            onRequestClose={closeModalDelete}
+            style={customStylesDelete}
+            >
+            <div className='laModal'>
+                <span>Quiere Borrar a {codBorrado}</span>
+                <div className='tabla'>    
+                    <button className='btn btn-sm btn-primary mr-2'onClick={confirmaBorraRec}>Si</button>
+                    <button className='btn btn-sm btn-secondary' onClick={closeModalDelete}>No</button>
+                </div>
+            </div>
+        </Modal>
 
-
-            <div>
-                <table className='table table-bordered'> 
+            <div className="table-responsive tabla">
+                <table className='table table-bordered table-hover table-sm'> 
                     <thead>                        
                         <tr>
                             <th>#</th>
@@ -345,14 +373,27 @@ alert(isConfirmed);
                         )}
                         </tbody>                 
                 </table>
-                <div className="pagination">
+                {/* <div className="pagination">
                     <Pagination
                     activePage={ activePage }
                     itemsCountPerPage={ 6 }
                     totalItemsCount={ otroDatos.length }
                     pageRangeDisplayed={ 6 }
                     onChange={ handlePageChange }
-                    />
+                    /> */}
+                    <div className="pagination">
+                    <Pagination
+                    previousLabel={"anterior"}
+                    nextLabel={"siguiente"}
+                    breakLabel={"..."}
+                    breakClassName={"break-me"}
+                    pageCount={pageCount}
+                    marginPagesDisplayed={2}
+                    pageRangeDisplayed={8}
+                    onPageChange={handlePageClick}
+                    containerClassName={"pagination"}
+                    subContainerClassName={"pages pagination"}
+                    activeClassName={"active"}/>                    
                 </div>
             </div>
         </div>

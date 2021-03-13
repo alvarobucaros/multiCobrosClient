@@ -1,11 +1,5 @@
-import React, {Fragment} from 'react';
-import { Form, FormGroup, Label, 
-        Input, Button, Select} from 'reactstrap'
-// import {useForm} from 'react-hook-form';
-// import Axios from 'axios';
-// import Modal from 'react-modal';
-
-// id, ig_idEmpresa, ig_fecha, ig_tipo, ig_detalle, ig_numero, ig_documento, ig_idUsuario, ig_valor, ig_saldo
+import React from 'react';
+import { Form } from 'reactstrap'
 
 
 const IngreGastos = () => {
